@@ -26,8 +26,9 @@
       "launchUrl": "BoardGame/Get",
       "applicationUrl": "https://localhost:55221;http://localhost:55222",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "UseDeveloperExceptionPage": "false"
+        "ASPNETCORE_ENVIRONMENT": "Testing",
+        "UseDeveloperExceptionPage": "false",
+        "UseSwagger": "true"
       }
     },
     "IIS Express": {
