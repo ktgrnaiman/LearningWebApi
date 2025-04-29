@@ -1,4 +1,4 @@
-﻿namespace Learning
+﻿namespace Learning.Models
 {
     public class BoardGame
     {
