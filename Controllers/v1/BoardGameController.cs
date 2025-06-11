@@ -10,7 +10,7 @@ namespace Learning.Controllers.v1
     /// </summary>
     [ApiController]
     [Route("v{version:apiVersion}/[controller]")]
-    [ApiVersion(1.0)]
+    [ApiVersion(1.0, Deprecated = true)]
     public class BoardGameController : ControllerBase
     {
         private readonly ILogger<BoardGameController> _logger;
@@ -27,7 +27,7 @@ namespace Learning.Controllers.v1
         /// Returns list of all games
         /// </summary>
         [HttpGet("Get")]
-        [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
+        [ResponseCache(Location = ResponseCacheLocation.None)]
         public IEnumerable<BoardGame> Get() 
         {
             yield return new BoardGame(0, "Axis and Allies", 1981, 8, 16);

@@ -9,7 +9,6 @@ var builder = WebApplication.CreateBuilder(args);
 //Add Http api endpoint controllers
 builder.Services.AddControllers();
 
-
 //Add cross-origin resource sharing policies
 builder.Services.AddCors(options => {
     options.AddDefaultPolicy(plc => { 
@@ -17,14 +16,14 @@ builder.Services.AddCors(options => {
         plc.AllowAnyHeader();
         plc.AllowAnyMethod(); 
     });
-    options.AddPolicy(name: "AnyOrigin", plc => {
+    options.AddPolicy(name: "AnyOriginGetOnly", plc => {
         plc.AllowAnyOrigin();
         plc.AllowAnyHeader();
         plc.AllowAnyMethod();
     }); 
 });
 
-//Adds api versioning service and configuring it
+//Adding api versioning and configuring it
 builder.Services.AddApiVersioning(options => {
     options.ApiVersionReader = new UrlSegmentApiVersionReader();
     options.AssumeDefaultVersionWhenUnspecified = true;
@@ -58,7 +57,7 @@ else
     app.UseExceptionHandler("/error");
 
 app.MapGet("/error/test",
-    [EnableCors("AnyOrigin")]
+    [EnableCors("AnyOriginGetOnly")]
     [ResponseCache(NoStore = true)]
     () => { throw new Exception("test"); });
 
