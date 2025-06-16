@@ -3,8 +3,19 @@ using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Learning;
+using Learning.Models;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Getting local secrets config and configuring DbContext
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddUserSecrets<Program>();
+    builder.Services.AddDbContext<ApplicationDbContext>(contextOptions => 
+        contextOptions.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+    );
+}
 
 //Add Http api endpoint controllers
 builder.Services.AddControllers();
@@ -51,6 +62,7 @@ if (app.Configuration.GetValue<bool>("UseSwagger"))
     app.UseSwaggerUI();
 }
 
+//Using the minimal api
 if (app.Configuration.GetValue<bool>("UseDeveloperExceptionPage"))
     app.UseDeveloperExceptionPage();
 else
@@ -63,8 +75,10 @@ app.MapGet("/error/test",
 
 app.MapGet("/error",
     [ResponseCache(NoStore = true)]
-    () => Results.Problem()).RequireCors("AnyOrigin");
+    () => Results.Problem())
+    .RequireCors("AnyOrigin");
 
+//Configuring middleware pipeline
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
