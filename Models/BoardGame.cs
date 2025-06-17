@@ -15,7 +15,10 @@ public class BoardGame
         
     [Required]
     public int Year { get; set; }
-        
+    
+    [Required]
+    public int PublisherId { get; set; }
+    
     [Required]
     public int MinPlayers { get; set; }
         
@@ -48,8 +51,21 @@ public class BoardGame
         
     [Required]
     public DateTime LastModifiedDate { get; set; }
-
+    
+    [MaxLength(200)] 
+    public string AlternateNames { get; set; }
+    
+    [MaxLength(200)]
+    public string Designer { get; set; }
+    
+    [Required]
+    public int Flags { get; set; }
+    
+    public Publisher? Publisher { get; set; }
+    
     public ICollection<BoardGame_Domain>? DomainsJunction { get; set; }
     
     public ICollection<BoardGame_Mechanic>? MechanicsJunction { get; set; }
+    
+    public ICollection<BoardGame_Category>? CategoriesJunction { get; set; }
 }

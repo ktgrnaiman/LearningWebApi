@@ -5,7 +5,11 @@ namespace Learning.Models;
 public class ApplicationDbContext : DbContext
 {
     public DbSet<BoardGame> BoardGames => base.Set<BoardGame>();
-
+    
+    public DbSet<Publisher> Publishers => base.Set<Publisher>();
+    
+    public DbSet<Category> Categories => base.Set<Category>();
+    
     public DbSet<Domain> Domains => base.Set<Domain>();
 
     public DbSet<Mechanic> Mechanics => base.Set<Mechanic>();
@@ -23,31 +27,61 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<BoardGame_Domain>().HasKey(i => new {i.BoardGameId, i.DomainId});
+        modelBuilder.Entity<BoardGame>()
+            .HasOne(game => game.Publisher)
+            .WithMany(pub => pub.BoardGames)
+            .HasForeignKey(game => game.PublisherId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        
+        modelBuilder.Entity<BoardGame_Category>().HasKey(i => new { i.BoardGameId, i.CategoryId });
 
+        modelBuilder.Entity<BoardGame_Category>()
+            .HasOne(junc => junc.BoardGame)
+            .WithMany(game => game.CategoriesJunction)
+            .HasForeignKey(junc => junc.BoardGameId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<BoardGame_Category>()
+            .HasOne(junc => junc.Category)
+            .WithMany(cat => cat.BoardGamesJunction)
+            .HasForeignKey(junc => junc.CategoryId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        
+        modelBuilder.Entity<BoardGame_Domain>().HasKey(i => new {i.BoardGameId, i.DomainId});
+        
         modelBuilder.Entity<BoardGame_Domain>()
             .HasOne(junc => junc.BoardGame)
             .WithMany(game => game.DomainsJunction)
+            .HasForeignKey(junc => junc.BoardGameId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<BoardGame_Domain>()
             .HasOne(junc => junc.Domain)
             .WithMany(dom => dom.BoardGamesJunction)
+            .HasForeignKey(junc => junc.DomainId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
+        
         
         modelBuilder.Entity<BoardGame_Mechanic>().HasKey(i => new {i.BoardGameId, i.MechanicId});
 
         modelBuilder.Entity<BoardGame_Mechanic>()
             .HasOne(junc => junc.BoardGame)
             .WithMany(game => game.MechanicsJunction)
+            .HasForeignKey(junc => junc.BoardGameId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<BoardGame_Mechanic>()
             .HasOne(junc => junc.Mechanic)
             .WithMany(mech => mech.BoardGamesJunction)
+            .HasForeignKey(junc => junc.MechanicId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
     }
