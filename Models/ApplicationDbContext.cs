@@ -24,30 +24,35 @@ public class ApplicationDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<BoardGame_Domain>().HasKey(i => new {i.BoardGameId, i.DomainId});
-
+        
         modelBuilder.Entity<BoardGame_Domain>()
             .HasOne(junc => junc.BoardGame)
             .WithMany(game => game.DomainsJunction)
+            .HasForeignKey(junc => junc.BoardGameId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<BoardGame_Domain>()
             .HasOne(junc => junc.Domain)
             .WithMany(dom => dom.BoardGamesJunction)
+            .HasForeignKey(junc => junc.DomainId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
+        
         
         modelBuilder.Entity<BoardGame_Mechanic>().HasKey(i => new {i.BoardGameId, i.MechanicId});
 
         modelBuilder.Entity<BoardGame_Mechanic>()
             .HasOne(junc => junc.BoardGame)
             .WithMany(game => game.MechanicsJunction)
+            .HasForeignKey(junc => junc.BoardGameId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<BoardGame_Mechanic>()
             .HasOne(junc => junc.Mechanic)
             .WithMany(mech => mech.BoardGamesJunction)
+            .HasForeignKey(junc => junc.MechanicId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
     }
