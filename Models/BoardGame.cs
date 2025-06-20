@@ -52,4 +52,12 @@ public class BoardGame
     public ICollection<BoardGame_Domain>? DomainsJunction { get; set; }
     
     public ICollection<BoardGame_Mechanic>? MechanicsJunction { get; set; }
+    
+    public BoardGame() {}
+    
+    public BoardGame(int id, string name)
+    {
+        Id = id;
+        Name = name;
+    }
 }

@@ -19,4 +19,13 @@ public class Mechanic
     public DateTime LastModifiedDate { get; set; }
     
     public ICollection<BoardGame_Mechanic>? BoardGamesJunction { get; set; }
+
+    public Mechanic() {}
+
+    public Mechanic(string name, DateTime time)
+    {
+        Name = name;
+        CreatedDate = time;
+        LastModifiedDate = time;
+    }
 }
