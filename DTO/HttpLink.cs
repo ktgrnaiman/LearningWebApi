@@ -26,10 +26,10 @@ public record HttpLink
     /// <param name="reference">Reference to endpoint</param>
     /// <param name="type">Type of Http request</param>
     /// <param name="relation">Relation to specified Http resource</param>
-    public HttpLink(string reference, string type, string relation)
+    public HttpLink(string reference, string relation, string type)
     {
         Ref = reference ?? throw new ArgumentNullException(nameof(reference));
-        Type = type ?? throw new ArgumentNullException(nameof(type));
         Rel = relation ?? throw new ArgumentNullException(nameof(relation));
+        Type = type ?? throw new ArgumentNullException(nameof(type));
     }
 }

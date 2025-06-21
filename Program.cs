@@ -47,7 +47,9 @@ builder.Services.AddApiVersioning(options => {
 
 //Documentation
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => 
+    options.CustomSchemaIds(type => type.ToString())
+);
 
 builder.Services.ConfigureOptions<ConfigureSwaggerGenerator>();
 builder.Services.ConfigureOptions<ConfigureSwaggerUI>();
