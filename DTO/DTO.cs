@@ -13,24 +13,43 @@ public record Dto<TValue>
     public IEnumerable<HttpLink>? Links { get; init; }
     
     /// <summary>
+    /// Index of requested page
+    /// </summary>
+    public int? PageIndex { get; set; }
+    
+    /// <summary>
+    /// Size of requested page
+    /// </summary>
+    public int? PageSize { get; set; }
+    
+    /// <summary>
+    /// Amount of elements of requested type
+    /// </summary>
+    public int? EntriesCount { get; set; }
+    
+    /// <summary>
     /// Main response data
     /// </summary>
     public TValue? Data { get; init; }
-
+    
     public Dto()
     {
         
     }
     
-    public Dto(TValue data, IEnumerable<HttpLink> links)
+    public Dto(TValue data, int pageIndex, int pageSize, IEnumerable<HttpLink> links)
     {
         Data = data;
         Links = links;
+        PageIndex = pageIndex;
+        PageSize = pageSize;
     }
 
-    public Dto(TValue data, params HttpLink[] links)
+    public Dto(TValue data, int pageIndex, int pageSize, params HttpLink[] links)
     {
         Data = data;
         Links = links;
+        PageIndex = pageIndex;
+        PageSize = pageSize;
     }
 }
