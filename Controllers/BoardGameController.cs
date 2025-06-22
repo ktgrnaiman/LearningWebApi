@@ -25,13 +25,13 @@ public class BoardGameController : ControllerBase
     /// </summary>
     /// <param name="pageIndex">Index of requested page</param>
     /// <param name="pageSize">Size of pages to use in calculation and data retrieval</param>
-    /// <param name="filterQuery">Query string for comparing with names</param>
+    /// <param name="filterQuery">Query string with which names should start</param>
     /// <param name="sortColumn">Name of column used as criteria for sorting</param>
     /// <param name="sortAsc">Ascending or descending sorting</param>
     /// <returns>Array of board games in DTO</returns>
     [HttpGet("GetGame")]
     [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
-    public async Task<Dto<BoardGame[]>> GetGame(
+    public async Task<Dto<BoardGame[]>> GetGames(
         int pageIndex = 0, int pageSize = 10, 
         string? filterQuery = null, 
         string? sortColumn = null, bool sortAsc = true)
@@ -39,7 +39,7 @@ public class BoardGameController : ControllerBase
         IQueryable<BoardGame> query = _context.BoardGames;
 
         if (!string.IsNullOrWhiteSpace(filterQuery))
-            query = query.Where(game => game.Name.Contains(filterQuery));
+            query = query.Where(game => game.Name.StartsWith(filterQuery));
         int entryCount = await query.CountAsync();
         
         if (!string.IsNullOrWhiteSpace(sortColumn))
@@ -80,6 +80,15 @@ public class BoardGameController : ControllerBase
                 game.Name = updateGame.Name;
             if (updateGame.Year is > 0)
                 game.Year = updateGame.Year.Value;
+            if (updateGame.MinAge is >= 0)
+                game.MinAge = updateGame.MinAge.Value;
+            if (updateGame.PlayTime is > 0)
+                game.PlayTime = updateGame.PlayTime.Value;
+            if (updateGame.MinPlayers is > 0)
+                game.MinPlayers = updateGame.MinPlayers.Value;
+            if (updateGame.MaxPlayers is > 0)
+                game.MaxPlayers = updateGame.MaxPlayers.Value;
+            
             game.LastModifiedDate = DateTime.UtcNow;
             _context.Update(game);
             await _context.SaveChangesAsync();
@@ -117,6 +126,39 @@ public class BoardGameController : ControllerBase
             Data = game,
             Links = [new HttpLink(
                 Url.Action(null, "BoardGame", id, Request.Scheme)!, 
+                "self", "DELETE"
+            )]
+        };
+    }
+    
+    /// <summary>
+    /// Deletes board games entry with specified unique IDs
+    /// </summary>
+    /// <param name="ids">IDs of board game to delete</param>
+    /// <returns>Deleted games data</returns>
+    [HttpDelete("DeleteGames")]
+    [ResponseCache(NoStore = true)]
+    public async Task<Dto<BoardGame[]?>> DeleteGames(int[] ids)
+    {
+        var games = new List<BoardGame>(ids.Length);
+        
+        foreach (int id in ids)
+        {
+            var game = await _context.BoardGames.FindAsync(id);
+            if (game is not null)
+            {
+                games.Add(game);
+                _context.BoardGames.Remove(game);
+            }
+        }
+        
+        await _context.SaveChangesAsync();
+        
+        return new Dto<BoardGame[]?>()
+        {
+            Data = games.ToArray(),
+            Links = [new HttpLink(
+                Url.Action(null, "BoardGame", ids, Request.Scheme)!, 
                 "self", "DELETE"
             )]
         };

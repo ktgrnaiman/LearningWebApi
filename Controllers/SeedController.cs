@@ -28,7 +28,7 @@ public class SeedController : ControllerBase
 
     [HttpPut("Init")]
     [ResponseCache(NoStore = true)]
-    public async Task<IActionResult> Seed()
+    public async Task<IActionResult> Seed(int? id)
     {
         var config = new CsvConfiguration(CultureInfo.GetCultureInfo("pt-BR"))
         {
@@ -41,8 +41,12 @@ public class SeedController : ControllerBase
 
         var now = DateTime.UtcNow;
         int skipRows = 0;
+
+        var records = reader.GetRecords<BoardGameCsvRecord>();
+        if (id.HasValue)
+            records = records.Where(x => x.Id == id);
         
-        foreach (var gameRec in reader.GetRecords<BoardGameCsvRecord>())
+        foreach (var gameRec in records)
         {
             if (!gameRec.Id.HasValue 
                 || String.IsNullOrWhiteSpace(gameRec.Name) 
