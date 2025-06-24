@@ -11,29 +11,20 @@ namespace Learning.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BoardGameController : ControllerBase
+public class BoardGameController(ApplicationDbContext context, ILogger<BoardGameController> logger)
+    : ControllerBase
 {
-    private ILogger<BoardGameController> _logger;
-    private ApplicationDbContext _context;
-    
-    public BoardGameController(ApplicationDbContext context, ILogger<BoardGameController> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
-    
+    private readonly ILogger<BoardGameController> _logger = logger;
+    private readonly ApplicationDbContext _context = context;
+
     /// <summary>
     /// Returns paginated entries in DTO
     /// </summary>
-    /// <param name="pageIndex">Index of requested page</param>
-    /// <param name="pageSize">Size of pages to use in calculation and data retrieval</param>
-    /// <param name="filterQuery">Query string for comparing with names</param>
-    /// <param name="sortColumn">Name of column used as criteria for sorting</param>
-    /// <param name="sortDir">Ascending or descending sorting</param>
+    /// <param name="request"></param>
     /// <returns>Array of board games in DTO</returns>
     [HttpGet("GetGame")]
     [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
-    public async Task<Dto<BoardGame[]>> GetGame([FromQuery]GetRequestDto<BoardGameDto> request)
+    public async Task<ResponseDto<BoardGame[]>> GetGames([FromQuery]GetRequestDto<BoardGameDto> request)
     {
         IQueryable<BoardGame> query = _context.BoardGames;
 
@@ -49,7 +40,7 @@ public class BoardGameController : ControllerBase
         
         query = query.Skip(request.PageIndex * request.PageSize).Take(request.PageSize); 
         
-        return new Dto<BoardGame[]>()
+        return new ResponseDto<BoardGame[]>()
         {
             Data = await query.ToArrayAsync(),
             PageIndex = request.PageIndex,
@@ -65,30 +56,30 @@ public class BoardGameController : ControllerBase
     /// <summary>
     /// Updates board game's name, year properties
     /// </summary>
-    /// <param name="updateGame">New values for updating</param>
+    /// <param name="update">New values for updating</param>
     /// <returns>Updated board game entry</returns>
     [HttpPost("UpdateGame")]
     [ResponseCache(NoStore = true)]
-    public async Task<Dto<BoardGame?>> PostGame(BoardGameDto updateGame)
+    public async Task<ResponseDto<BoardGame?>> PostGame(BoardGameDto update)
     {
-        var game = await _context.BoardGames.FindAsync(updateGame.Id);
+        var game = await _context.BoardGames.FindAsync(update.Id);
 
         if (game is not null)
         {
-            if (!string.IsNullOrWhiteSpace(updateGame.Name))
-                game.Name = updateGame.Name;
-            if (updateGame.Year is > 0)
-                game.Year = updateGame.Year.Value;
+            if (!string.IsNullOrWhiteSpace(update.Name))
+                game.Name = update.Name;
+            if (update.Year is > 0)
+                game.Year = update.Year.Value;
             game.LastModifiedDate = DateTime.UtcNow;
-            _context.Update(game);
+            _context.BoardGames.Update(game);
             await _context.SaveChangesAsync();
         }
 
-        return new Dto<BoardGame?>()
+        return new ResponseDto<BoardGame?>()
         {
             Data = game,
             Links = [new HttpLink(
-                Url.Action(null, "BoardGame", updateGame, Request.Scheme)!, 
+                Url.Action(null, "BoardGame", update, Request.Scheme)!, 
                 "self", "POST")
             ]
         };
@@ -101,7 +92,7 @@ public class BoardGameController : ControllerBase
     /// <returns>Deleted game data</returns>
     [HttpDelete("DeleteGame")]
     [ResponseCache(NoStore = true)]
-    public async Task<Dto<BoardGame?>> DeleteGame(int id)
+    public async Task<ResponseDto<BoardGame?>> DeleteGame(int id)
     {
         var game = await _context.BoardGames.FindAsync(id);
 
@@ -111,7 +102,7 @@ public class BoardGameController : ControllerBase
             await _context.SaveChangesAsync();
         }
 
-        return new Dto<BoardGame?>()
+        return new ResponseDto<BoardGame?>()
         {
             Data = game,
             Links = [new HttpLink(

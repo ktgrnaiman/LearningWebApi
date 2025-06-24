@@ -8,6 +8,7 @@ public class GetRequestDto<T> : IValidatableObject
 {
     private readonly SortColumnValidationAttribute _colValidator = new(typeof(T));
     private readonly SortDirectionValidationAttribute _dirValidator = new();
+    private readonly FilterQueryValidationAttribute _filterValidator = new();
     
     [DefaultValue(0)]
     public int PageIndex { get; set; }
@@ -29,10 +30,12 @@ public class GetRequestDto<T> : IValidatableObject
     {
         var result = new List<ValidationResult>();
 
+        if (FilterQuery is not null)
+            result.Add(_filterValidator.GetValidationResult(FilterQuery, context)!);
         if (SortColumn is not null)
-            result.Add(_colValidator.GetValidationResult(SortColumn, context));
+            result.Add(_colValidator.GetValidationResult(SortColumn, context)!);
         if (SortDir is not null)
-            result.Add(_dirValidator.GetValidationResult(SortDir, context));
+            result.Add(_dirValidator.GetValidationResult(SortDir, context)!);
 
         return result.ToArray();
     }

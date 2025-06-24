@@ -75,7 +75,10 @@ public class SeedController : ControllerBase
                              .Split(',', StringSplitOptions.TrimEntries)
                              .Distinct(StringComparer.InvariantCultureIgnoreCase))
                 {
-                    var domain = await _context.Domains.FirstOrDefaultAsync(dom => dom.Name == domainName);
+                    var domain = _context.ChangeTracker
+                        .Entries<Domain>()
+                        .FirstOrDefault(dom => dom.Entity.Name == domainName)?.Entity;
+                    
                     if (domain is null)
                     {
                         domain = new Domain(domainName, now);
@@ -89,7 +92,10 @@ public class SeedController : ControllerBase
                              .Split(',', StringSplitOptions.TrimEntries)
                              .Distinct(StringComparer.InvariantCultureIgnoreCase))
                 {
-                    var mechanic = await _context.Mechanics.FirstOrDefaultAsync(mech => mech.Name == mechName);
+                    var mechanic = _context
+                        .ChangeTracker.Entries<Mechanic>()
+                        .FirstOrDefault(mech => mech.Entity.Name == mechName)?.Entity;
+                    
                     if (mechanic is null)
                     {
                         mechanic = new Mechanic(mechName, now);

@@ -2,12 +2,19 @@
 
 namespace Learning.DTO;
 
-public class BoardGameDto(int id, string? name, int? year)
+public class BoardGameDto: IValidatableObject
 {
     [Required]
-    public int Id { get; set; } = id;
+    public int Id { get; set; }
 
-    public string? Name { get; set; } = name;
+    public string? Name { get; set; }
 
-    public int? Year { get; set; } = year;
+    public int? Year { get; set; }
+    
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (Name is null && Year is null)
+            return [new ValidationResult("You passed empty data to update")];
+        return Array.Empty<ValidationResult>();
+    }
 }

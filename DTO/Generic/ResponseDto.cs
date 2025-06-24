@@ -5,7 +5,7 @@
 /// Used to comply with Uniform interface principle of REST
 /// </summary>
 /// <typeparam name="TValue">Type of payload value</typeparam>
-public record Dto<TValue>
+public record ResponseDto<TValue>
 {
     /// <summary>
     /// Links to other related endpoints
@@ -32,12 +32,12 @@ public record Dto<TValue>
     /// </summary>
     public TValue? Data { get; init; }
     
-    public Dto()
+    public ResponseDto()
     {
         
     }
     
-    public Dto(TValue data, int pageIndex, int pageSize, IEnumerable<HttpLink> links)
+    public ResponseDto(TValue data, int pageIndex, int pageSize, IEnumerable<HttpLink> links)
     {
         Data = data;
         Links = links;
@@ -45,7 +45,7 @@ public record Dto<TValue>
         PageSize = pageSize;
     }
 
-    public Dto(TValue data, int pageIndex, int pageSize, params HttpLink[] links)
+    public ResponseDto(TValue data, int pageIndex, int pageSize, params HttpLink[] links)
     {
         Data = data;
         Links = links;
