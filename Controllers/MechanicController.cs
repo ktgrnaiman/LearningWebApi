@@ -33,7 +33,7 @@ public class MechanicController(ApplicationDbContext context, ILogger<MechanicCo
         if (request.SortColumn is not null)
             query = query.OrderBy($"{request.SortColumn} {request.SortDir}");
 
-        query = query.Skip(request.PageIndex * request.PageSize).Take(request.PageIndex);
+        query = query.Skip(request.PageIndex * request.PageSize).Take(request.PageSize);
 
         return new ResponseDto<Mechanic[]>()
         {

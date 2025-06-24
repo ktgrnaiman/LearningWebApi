@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Globalization;
+using System.Linq.Dynamic.Core;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Learning.Models;
@@ -28,7 +29,7 @@ public class SeedController : ControllerBase
 
     [HttpPut("Init")]
     [ResponseCache(NoStore = true)]
-    public async Task<IActionResult> Seed()
+    public async Task<IActionResult> Seed(int? count = null)
     {
         var config = new CsvConfiguration(CultureInfo.GetCultureInfo("pt-BR"))
         {
@@ -39,10 +40,16 @@ public class SeedController : ControllerBase
         using var stream = new StreamReader(System.IO.Path.Combine(_env.ContentRootPath, DataLocation));
         using var reader = new CsvReader(stream, config);
 
+        var cachedDomains = new Dictionary<string, Domain>();
+        var cachedMechanics = new Dictionary<string, Mechanic>();
         var now = DateTime.UtcNow;
         int skipRows = 0;
         
-        foreach (var gameRec in reader.GetRecords<BoardGameCsvRecord>())
+        var records = reader.GetRecords<BoardGameCsvRecord>();
+        if (count.HasValue)
+            records = records.Take(count.Value);
+        
+        foreach (var gameRec in records)
         {
             if (!gameRec.Id.HasValue 
                 || String.IsNullOrWhiteSpace(gameRec.Name) 
@@ -75,30 +82,30 @@ public class SeedController : ControllerBase
                              .Split(',', StringSplitOptions.TrimEntries)
                              .Distinct(StringComparer.InvariantCultureIgnoreCase))
                 {
-                    var domain = _context.ChangeTracker
-                        .Entries<Domain>()
-                        .FirstOrDefault(dom => dom.Entity.Name == domainName)?.Entity;
-                    
+                    cachedDomains.TryGetValue(domainName, out var domain);
+                    domain ??= _context.Domains.FirstOrDefault(d => d.Name == domainName);
+                        
                     if (domain is null)
                     {
                         domain = new Domain(domainName, now);
+                        cachedDomains.Add(domainName, domain);
                         _context.Domains.Add(domain);
                     }
                     _context.GameDomainJunctions.Add(new BoardGame_Domain(game, domain, now));
                 }
             
-            if(!String.IsNullOrWhiteSpace(gameRec.Mechanics))
+            if(!string.IsNullOrWhiteSpace(gameRec.Mechanics))
                 foreach (var mechName in gameRec.Mechanics
                              .Split(',', StringSplitOptions.TrimEntries)
                              .Distinct(StringComparer.InvariantCultureIgnoreCase))
                 {
-                    var mechanic = _context
-                        .ChangeTracker.Entries<Mechanic>()
-                        .FirstOrDefault(mech => mech.Entity.Name == mechName)?.Entity;
-                    
+                    cachedMechanics.TryGetValue(mechName, out var mechanic);
+                    mechanic ??= _context.Mechanics.FirstOrDefault(m => m.Name == mechName);
+                        
                     if (mechanic is null)
                     {
                         mechanic = new Mechanic(mechName, now);
+                        cachedMechanics.Add(mechName, mechanic);
                         _context.Mechanics.Add(mechanic);
                     }
                     _context.GameMechanicJunctions.Add(new BoardGame_Mechanic(game, mechanic, now));
