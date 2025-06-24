@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 using Learning.DTO;
 using Learning.Models;
+using Learning.Attributes;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
@@ -27,39 +29,36 @@ public class BoardGameController : ControllerBase
     /// <param name="pageSize">Size of pages to use in calculation and data retrieval</param>
     /// <param name="filterQuery">Query string for comparing with names</param>
     /// <param name="sortColumn">Name of column used as criteria for sorting</param>
-    /// <param name="sortAsc">Ascending or descending sorting</param>
+    /// <param name="sortDir">Ascending or descending sorting</param>
     /// <returns>Array of board games in DTO</returns>
     [HttpGet("GetGame")]
     [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
-    public async Task<Dto<BoardGame[]>> GetGame(
-        int pageIndex = 0, int pageSize = 10, 
-        string? filterQuery = null, 
-        string? sortColumn = null, bool sortAsc = true)
+    public async Task<Dto<BoardGame[]>> GetGame([FromQuery]GetRequestDto<BoardGameDto> request)
     {
         IQueryable<BoardGame> query = _context.BoardGames;
 
-        if (!string.IsNullOrWhiteSpace(filterQuery))
-            query = query.Where(game => game.Name.Contains(filterQuery));
+        if (!string.IsNullOrWhiteSpace(request.FilterQuery))
+            query = query.Where(game => game.Name.Contains(request.FilterQuery));
         int entryCount = await query.CountAsync();
         
-        if (!string.IsNullOrWhiteSpace(sortColumn))
+        if (!string.IsNullOrWhiteSpace(request.SortColumn))
         {
-            string orderDir = sortAsc ? "ASC" : "DESC";
-            query = query.OrderBy($"{sortColumn} {orderDir}");
+            string orderDir = request.SortDir ?? "ASC";
+            query = query.OrderBy($"{request.SortColumn} {orderDir}");
         }
         
-        query = query.Skip(pageIndex * pageSize).Take(pageSize); 
+        query = query.Skip(request.PageIndex * request.PageSize).Take(request.PageSize); 
         
         return new Dto<BoardGame[]>()
         {
             Data = await query.ToArrayAsync(),
-            PageIndex = pageIndex,
-            PageSize = pageSize,
+            PageIndex = request.PageIndex,
+            PageSize = request.PageSize,
             EntriesCount = entryCount,
             Links = [new HttpLink(
-                Url.Action(null, "BoardGame", new {pageIndex, pageSize}, Request.Scheme)!,
-                "self", "GET"
-            )]
+                Url.Action(null, "BoardGame", new {request.PageIndex, request.PageSize}, Request.Scheme)!,
+                "self", "GET")
+            ]
         };
     }
     
@@ -90,8 +89,8 @@ public class BoardGameController : ControllerBase
             Data = game,
             Links = [new HttpLink(
                 Url.Action(null, "BoardGame", updateGame, Request.Scheme)!, 
-                "self", "POST"
-            )]
+                "self", "POST")
+            ]
         };
     }
     
@@ -117,8 +116,8 @@ public class BoardGameController : ControllerBase
             Data = game,
             Links = [new HttpLink(
                 Url.Action(null, "BoardGame", id, Request.Scheme)!, 
-                "self", "DELETE"
-            )]
+                "self", "DELETE")
+            ]
         };
     }
 }

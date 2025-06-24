@@ -4,7 +4,9 @@ using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Learning;
 using Learning.Models;
+using Learning.Swagger;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,8 +49,12 @@ builder.Services.AddApiVersioning(options => {
 
 //Documentation
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options => 
-    options.CustomSchemaIds(type => type.ToString())
+builder.Services.AddSwaggerGen(options =>
+    {
+        options.CustomSchemaIds(type => type.ToString());
+        options.ParameterFilter<SortColumnFilter>();
+        options.ParameterFilter<SortDirectionFilter>();
+    }
 );
 
 builder.Services.ConfigureOptions<ConfigureSwaggerGenerator>();
