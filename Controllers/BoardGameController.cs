@@ -6,6 +6,7 @@ using Learning.Attributes;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Learning.Controllers;
 
@@ -24,8 +25,13 @@ public class BoardGameController(ApplicationDbContext context, ILogger<BoardGame
     /// <returns>Array of board games in DTO</returns>
     [HttpGet("GetGame")]
     [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
-    public async Task<ResponseDto<BoardGame[]>> GetGames([FromQuery]GetRequestDto<BoardGameDto> request)
+    [ManualValidationFilter]
+    public async Task<ActionResult<ResponseDto<BoardGame[]>>> GetGames([FromQuery]GetRequestDto<BoardGameDto> request)
     {
+        var validationResult = HandleGetModelState();
+        if (validationResult is not null)
+            return validationResult;
+        
         IQueryable<BoardGame> query = _context.BoardGames;
 
         if (!string.IsNullOrWhiteSpace(request.FilterQuery))
@@ -51,6 +57,31 @@ public class BoardGameController(ApplicationDbContext context, ILogger<BoardGame
                 "self", "GET")
             ]
         };
+    }
+
+    private ActionResult? HandleGetModelState()
+    {
+        if (!ModelState.IsValid)
+        {
+            var details = new ValidationProblemDetails(ModelState);
+            details.Extensions["traceId"] = System.Diagnostics.Activity.Current?.Id ??
+                                            HttpContext.TraceIdentifier;
+            if (ModelState.Keys.Any(k => k == "PageSize"))
+            {
+                details.Type = "https://tools.ietf.org/html/rfc7231#section-6.6.2";
+                details.Status = StatusCodes.Status501NotImplemented;
+                return new ObjectResult(details) {
+                    StatusCode = StatusCodes.Status501NotImplemented
+                };
+            }
+            else
+            {
+                details.Type = "https:/ /tools.ietf.org/html/rfc7231#section-6.5.1";
+                details.Status = StatusCodes.Status400BadRequest;
+                return new BadRequestObjectResult(details);
+            }
+        }
+        return null;
     }
     
     /// <summary>
