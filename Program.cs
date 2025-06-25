@@ -5,6 +5,7 @@ using Asp.Versioning.ApiExplorer;
 using Learning;
 using Learning.Models;
 using Learning.Swagger;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -83,7 +84,18 @@ app.MapGet("/error/test",
 
 app.MapGet("/error",
     [ResponseCache(NoStore = true)]
-    () => Results.Problem())
+    (HttpContext context) =>
+    {
+        var exceptionHandler = context.Features.Get<IExceptionHandlerPathFeature>();
+        var details = new ProblemDetails();
+        details.Detail = exceptionHandler?.Error.Message;
+        details.Extensions["traceId"] =
+            System.Diagnostics.Activity.Current?.Id ??
+            context.TraceIdentifier;
+        details.Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1";
+        details.Status = StatusCodes.Status500InternalServerError;
+        return Results.Problem(details);
+    })
     .RequireCors("AnyOrigin");
 
 //Configuring middleware pipeline

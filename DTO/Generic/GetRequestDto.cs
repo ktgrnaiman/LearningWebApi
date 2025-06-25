@@ -4,6 +4,7 @@ using Learning.Attributes;
 
 namespace Learning.DTO;
 
+//TODO:PageSize and PageIndex do not receive default value.
 public class GetRequestDto<T> : IValidatableObject
 {
     private readonly SortColumnValidationAttribute _colValidator = new(typeof(T));
@@ -14,7 +15,6 @@ public class GetRequestDto<T> : IValidatableObject
     public int PageIndex { get; set; }
     
     [DefaultValue(10)]
-    [Range(1, 50)]
     public int PageSize { get; set; }
 
     [DefaultValue(null)]
@@ -30,6 +30,10 @@ public class GetRequestDto<T> : IValidatableObject
     {
         var result = new List<ValidationResult>();
 
+        if (PageIndex < 0)
+            result.Add(new ValidationResult("Index of page can't be less than zero"));
+        if (PageSize <= 0 || PageSize > 50)
+            result.Add(new ValidationResult("Page size should be in (1, 50) range"));
         if (FilterQuery is not null)
             result.Add(_filterValidator.GetValidationResult(FilterQuery, context)!);
         if (SortColumn is not null)
