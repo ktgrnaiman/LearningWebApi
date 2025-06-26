@@ -1,5 +1,6 @@
 ﻿using System.Linq.Dynamic.Core;
 using System.Runtime.InteropServices.JavaScript;
+using Learning.Attributes;
 using Learning.DTO;
 using Learning.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,8 @@ public class DomainController(ApplicationDbContext context, ILogger<DomainContro
     /// <returns>Page of specified Domains records</returns>
     [HttpGet("GetDomains")]
     [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
-    public async Task<ResponseDto<Domain[]>> GetDomains([FromQuery] GetRequestDto<Domain> request)
+    [ManualValidationFilter]
+    public async Task<ActionResult<ResponseDto<Domain[]>>> GetDomains([FromQuery] GetRequestDto<Domain> request)
     {
         IQueryable<Domain> query = _context.Domains;
         
@@ -47,6 +49,30 @@ public class DomainController(ApplicationDbContext context, ILogger<DomainContro
                 )
             ]
         };
+    }
+
+    private ActionResult? HandleModelState()
+    {
+        if (!ModelState.IsValid)
+        {
+            var details = new ValidationProblemDetails(ModelState);
+            details.Extensions["traceId"] = System.Diagnostics.Activity.Current?.Id ??
+                                            HttpContext.TraceIdentifier;
+            
+            if (ModelState.Keys.Any(s => s == "Id" || s == "Name"))
+            {
+                details.Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3";
+                details.Status = StatusCodes.Status403Forbidden;
+                return new ObjectResult(details) {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+            
+            details.Type = "https:/ /tools.ietf.org/html/rfc7231#section-6.5.1";
+            details.Status = StatusCodes.Status400BadRequest;
+            return new BadRequestObjectResult(details);
+        }
+        return null;
     }
     
     /// <summary>

@@ -80,7 +80,15 @@ else
 app.MapGet("/error/test",
     [EnableCors("AnyOriginGetOnly")]
     [ResponseCache(NoStore = true)]
-    () => { throw new Exception("test"); });
+    ([FromQuery]int errorCode) =>
+    {
+        throw errorCode switch
+        {
+            501 => new NotImplementedException(),
+            504 => new TimeoutException(),
+            _ => new Exception("Generic exception")
+        };
+    });
 
 app.MapGet("/error",
     [ResponseCache(NoStore = true)]
@@ -93,7 +101,12 @@ app.MapGet("/error",
             System.Diagnostics.Activity.Current?.Id ??
             context.TraceIdentifier;
         details.Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1";
-        details.Status = StatusCodes.Status500InternalServerError;
+        details.Status = exceptionHandler!.Error switch
+        {
+            NotImplementedException => StatusCodes.Status501NotImplemented,
+            TimeoutException => StatusCodes.Status504GatewayTimeout,
+            _ => StatusCodes.Status500InternalServerError
+        }; 
         return Results.Problem(details);
     })
     .RequireCors("AnyOrigin");
