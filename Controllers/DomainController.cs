@@ -21,7 +21,7 @@ public class DomainController(ApplicationDbContext context, ILogger<DomainContro
     /// <param name="request">Full request spec with pagination, sorting and filtering</param>
     /// <returns>Page of specified Domains records</returns>
     [HttpGet("GetDomains")]
-    [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
+    [ResponseCache(CacheProfileName = "Any60")]
     [ManualValidationFilter]
     public async Task<ActionResult<ResponseDto<Domain[]>>> GetDomains([FromQuery] GetRequestDto<Domain> request)
     {
@@ -81,7 +81,7 @@ public class DomainController(ApplicationDbContext context, ILogger<DomainContro
     /// <param name="update">Update data</param>
     /// <returns>Updated Domain record</returns>
     [HttpPost("UpdateDomain")]
-    [ResponseCache(NoStore = true)]
+    [ResponseCache(CacheProfileName = "NoCache")]
     public async Task<ResponseDto<Domain>> PostDomain(DomainDto update)
     {
         var domain = await _context.Domains.FindAsync(update.Id);
@@ -112,7 +112,7 @@ public class DomainController(ApplicationDbContext context, ILogger<DomainContro
     /// <param name="id">ID of Domain record to delete</param>
     /// <returns>Deleted Domain record</returns>
     [HttpDelete("DeleteDomain")]
-    [ResponseCache(NoStore = true)]
+    [ResponseCache(CacheProfileName = "NoCache")]
     public async Task<ResponseDto<Domain>> DeleteDomain(int id)
     {
         var domain = await _context.Domains.FindAsync(id);

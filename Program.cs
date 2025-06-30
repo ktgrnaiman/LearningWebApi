@@ -9,6 +9,7 @@ using Learning.Swagger;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Serilog;
 using Serilog.Events;
 using Serilog.Settings.Configuration;
@@ -26,8 +27,7 @@ if (builder.Environment.IsDevelopment())
 
 //Registering serilog
 builder.Logging.ClearProviders();
-builder.Host.UseSerilog((context, config) =>
-    {
+builder.Host.UseSerilog((context, config) => {
         config.ReadFrom.Configuration(context.Configuration);
         config.WriteTo.Console();
         config.Enrich.WithMachineName();
@@ -36,7 +36,18 @@ builder.Host.UseSerilog((context, config) =>
 );
 
 //Add Http api endpoint controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.CacheProfiles.Add("NoCache", new CacheProfile() {
+        NoStore = true,
+        Location = ResponseCacheLocation.None
+    });
+    
+    options.CacheProfiles.Add("Any60", new CacheProfile() {
+        Duration = 60,
+        Location = ResponseCacheLocation.Any,
+    });
+});
 
 //Add cross-origin resource sharing policies
 builder.Services.AddCors(options => {
@@ -75,6 +86,10 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.ConfigureOptions<ConfigureSwaggerGenerator>();
 builder.Services.ConfigureOptions<ConfigureSwaggerUI>();
+
+builder.Services.AddResponseCaching();
+
+builder.Services.AddMemoryCache();
 
 //Building App
 var app = builder.Build();
@@ -128,6 +143,18 @@ app.MapGet("/error",
         return Results.Problem(details);
     })
     .RequireCors("AnyOrigin");
+
+app.MapGet("/cache/test1", (HttpContext context) => Results.Ok());
+
+app.Use((context, next) =>
+{
+    context.Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue()
+    {
+        NoCache = true,
+        NoStore = true,
+    };
+    return next.Invoke();
+});
 
 //Configuring middleware pipeline
 app.UseHttpsRedirection();

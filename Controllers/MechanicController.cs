@@ -20,8 +20,8 @@ public class MechanicController(ApplicationDbContext context, ILogger<MechanicCo
     /// </summary>
     /// <param name="request">Full request spec with pagination, sorting and filtering</param>
     /// <returns>Page of specified Mechanics records</returns>
-    [HttpGet("GetMechanic")]
-    [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
+    [HttpGet("GetMechanics")]
+    [ResponseCache(CacheProfileName = "Any60")]
     public async Task<ResponseDto<Mechanic[]>> GetMechanics([FromQuery] GetRequestDto<Mechanic> request)
     {
         IQueryable<Mechanic> query = _context.Mechanics;
@@ -56,7 +56,7 @@ public class MechanicController(ApplicationDbContext context, ILogger<MechanicCo
     /// <param name="update">Update data</param>
     /// <returns>Updated Mechanic record</returns>
     [HttpPost("UpdateMechanic")]
-    [ResponseCache(NoStore = true)]
+    [ResponseCache(CacheProfileName = "NoCache")]
     public async Task<ResponseDto<Mechanic?>> UpdateMechanic(MechanicDto update)
     {
         var mechanic = await _context.Mechanics.FindAsync(update.Id);
@@ -87,7 +87,7 @@ public class MechanicController(ApplicationDbContext context, ILogger<MechanicCo
     /// <param name="id">ID of Mechanic record to delete</param>
     /// <returns>Deleted Mechanic record</returns>
     [HttpDelete("DeleteMechanic")]
-    [ResponseCache(NoStore = true)]
+    [ResponseCache(CacheProfileName = "NoCache")]
     public async Task<ResponseDto<Mechanic?>> DeleteMechanic(int id)
     {
         var mechanic = await _context.Mechanics.FindAsync(id);
