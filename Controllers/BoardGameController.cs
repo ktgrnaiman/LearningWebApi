@@ -1,12 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Dynamic.Core;
 using Learning.DTO;
 using Learning.Models;
 using Learning.Attributes;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.EntityFrameworkCore;
-using System.Linq.Dynamic.Core;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Learning.Constants;
 
 namespace Learning.Controllers;
 
@@ -31,6 +29,8 @@ public class BoardGameController(ApplicationDbContext context, ILogger<BoardGame
         var validationResult = HandleGetModelState();
         if (validationResult is not null)
             return validationResult;
+        
+        _logger.LogInformation(CustomLogEvents.BoardGameGet, "Get method started at ");
         
         IQueryable<BoardGame> query = _context.BoardGames;
 

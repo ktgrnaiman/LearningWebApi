@@ -3,11 +3,15 @@ using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Learning;
+using Learning.Constants;
 using Learning.Models;
 using Learning.Swagger;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Serilog;
+using Serilog.Events;
+using Serilog.Settings.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +23,17 @@ if (builder.Environment.IsDevelopment())
         contextOptions.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
     );
 }
+
+//Registering serilog
+builder.Logging.ClearProviders();
+builder.Host.UseSerilog((context, config) =>
+    {
+        config.ReadFrom.Configuration(context.Configuration);
+        config.WriteTo.Console();
+        config.Enrich.WithMachineName();
+        config.Enrich.WithThreadId();
+    }
+);
 
 //Add Http api endpoint controllers
 builder.Services.AddControllers();
@@ -101,12 +116,15 @@ app.MapGet("/error",
             System.Diagnostics.Activity.Current?.Id ??
             context.TraceIdentifier;
         details.Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1";
-        details.Status = exceptionHandler!.Error switch
+        details.Status = exceptionHandler?.Error switch
         {
             NotImplementedException => StatusCodes.Status501NotImplemented,
             TimeoutException => StatusCodes.Status504GatewayTimeout,
             _ => StatusCodes.Status500InternalServerError
         }; 
+        
+        app.Logger.LogError(CustomLogEvents.Error, exceptionHandler?.Error, "Some unhandled error happened");
+        
         return Results.Problem(details);
     })
     .RequireCors("AnyOrigin");

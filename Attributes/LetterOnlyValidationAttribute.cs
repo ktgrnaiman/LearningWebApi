@@ -4,15 +4,17 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Learning.Attributes;
 
-public class LetterOnlyValidationAttribute : ValidationAttribute
+public partial class LetterOnlyValidationAttribute : ValidationAttribute
 {
-    //Returns true if string is valid
+    [GeneratedRegex(@"^[a-zA-Z]+$")]
+    private static partial Regex LetterRegex();
+    
     private Func<string, bool> _isValid;
     
     public LetterOnlyValidationAttribute(bool useRegex)
     {
         if (useRegex)
-            _isValid = input => Regex.IsMatch(input, @"^[a-zA-Z]+$");
+            _isValid = input => LetterRegex().IsMatch(input);
         else
             _isValid = input => input.All(char.IsLetter);
     }
