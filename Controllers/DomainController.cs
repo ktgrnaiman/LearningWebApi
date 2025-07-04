@@ -1,19 +1,28 @@
 ﻿using System.Linq.Dynamic.Core;
 using System.Runtime.InteropServices.JavaScript;
+using System.Text.Json;
 using Learning.Attributes;
+using Learning.Constants;
 using Learning.DTO;
+using Learning.Extensions;
 using Learning.Models;
+using Learning.ServiceRegister;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Learning.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DomainController(ApplicationDbContext context, ILogger<DomainController> logger) : ControllerBase
+public class DomainController(
+    ApplicationDbContext context, 
+    ILogger<DomainController> logger, 
+    DistributedCacheProvider provider) : ControllerBase
 {
-    private ILogger<DomainController> _logger = logger;
-    private ApplicationDbContext _context = context;
+    private readonly ILogger<DomainController> _logger = logger;
+    private readonly ApplicationDbContext _context = context;
+    private readonly IDistributedCache _cache = provider.GetRequired("Postgres");
     
     /// <summary>
     /// Action for getting array of Domain records
@@ -21,27 +30,41 @@ public class DomainController(ApplicationDbContext context, ILogger<DomainContro
     /// <param name="request">Full request spec with pagination, sorting and filtering</param>
     /// <returns>Page of specified Domains records</returns>
     [HttpGet("GetDomains")]
-    [ResponseCache(CacheProfileName = "Any60")]
+    [ResponseCache(CacheProfileName = "NoCache")]
     [ManualValidationFilter]
     public async Task<ActionResult<ResponseDto<Domain[]>>> GetDomains([FromQuery] GetRequestDto<Domain> request)
     {
+        _logger.LogInformation(CustomLogEvents.DomainGet, "GetDomains method started at {HH:mm:ss}", DateTime.UtcNow);
+        
         IQueryable<Domain> query = _context.Domains;
         
         if (!string.IsNullOrWhiteSpace(request.FilterQuery))
             query = query.Where(d => d.Name.Contains(request.FilterQuery));
         int count = await query.CountAsync();
-        
-        if (request.SortColumn is not null)
-            query = query.OrderBy($"{request.SortColumn} {request.SortDir}");
 
-        query = query.Skip(request.PageIndex * request.PageSize).Take(request.PageSize);
+        Domain[] result;
+        string key = $"{typeof(GetRequestDto<Domain>)}-{JsonSerializer.Serialize(request)}";
+        if (!_cache.TryGetValue(key, out result))
+        {
+            if (request.SortColumn is not null)
+            {
+                string sortDir = request.SortDir ?? "ASC";
+                query = query.OrderBy($"{request.SortColumn} {sortDir}");
+            }
+            query = query.Skip(request.PageIndex * request.PageSize).Take(request.PageSize);
+            result = await query.ToArrayAsync();
+            _cache.Set(key, result, new TimeSpan(0, 0, 30));
+
+            _logger.LogInformation("Distributed cache entry has been created");
+        }
+        else _logger.LogInformation("Distributed cache entry has been retrieved");
 
         return new ResponseDto<Domain[]>()
         {
+            Data = result,
             PageIndex = request.PageIndex,
             PageSize = request.PageIndex,
             EntriesCount = count,
-            Data = await query.ToArrayAsync(),
             Links = [new HttpLink(
                 Url.Action(null, "Domain", new {request.PageIndex, request.PageSize}, Request.Scheme)!, 
                 "self", 
