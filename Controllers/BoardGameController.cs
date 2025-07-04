@@ -7,17 +7,18 @@ using Learning.DTO;
 using Learning.Models;
 using Learning.Attributes;
 using Learning.Constants;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Learning.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BoardGameController(ApplicationDbContext context, ILogger<BoardGameController> logger, IMemoryCache memoryCache)
+public class BoardGameController(ApplicationDbContext context, ILogger<BoardGameController> logger, IMemoryCache cache)
     : ControllerBase
 {
     private readonly ILogger<BoardGameController> _logger = logger;
     private readonly ApplicationDbContext _context = context;
-    private readonly IMemoryCache _memoryCache = memoryCache;
+    private readonly IMemoryCache _cache = cache;
     
     /// <summary>
     /// Returns paginated entries in DTO
@@ -25,7 +26,7 @@ public class BoardGameController(ApplicationDbContext context, ILogger<BoardGame
     /// <param name="request"></param>
     /// <returns>Array of board games in DTO</returns>
     [HttpGet("GetGames")]
-    [ResponseCache(CacheProfileName = "Any60")]
+    [ResponseCache(CacheProfileName = "NoCache")]
     [ManualValidationFilter]
     public async Task<ActionResult<ResponseDto<BoardGame[]>>> GetGames([FromQuery]GetRequestDto<BoardGameDto> request)
     {
@@ -33,33 +34,32 @@ public class BoardGameController(ApplicationDbContext context, ILogger<BoardGame
         if (validationResult is not null)
             return validationResult;
         
-        _logger.LogInformation(CustomLogEvents.BoardGameGet, "Get method started at ");
+        _logger.LogInformation(CustomLogEvents.BoardGameGet, "GetGames method started at {HH:mm:ss}", DateTime.UtcNow);
         
         IQueryable<BoardGame> query = _context.BoardGames;
 
         if (!string.IsNullOrWhiteSpace(request.FilterQuery))
             query = query.Where(game => game.Name.Contains(request.FilterQuery));
         int entryCount = await query.CountAsync();
-
+        
         BoardGame[] result;
         string key = $"{nameof(GetRequestDto<BoardGameDto>)}-{JsonSerializer.Serialize(request)}";
 
-        if (!_memoryCache.TryGetValue(key, out result!))
+        if (!_cache.TryGetValue(key, out result!))
         {
+            //TODO:Change when binding for complex type will be implemented
             if (!string.IsNullOrWhiteSpace(request.SortColumn))
             {
                 string orderDir = request.SortDir ?? "ASC";
                 query = query.OrderBy($"{request.SortColumn} {orderDir}");
             }
             query = query.Skip(request.PageIndex * request.PageSize).Take(request.PageSize);
-            
             result = await query.ToArrayAsync();
+            _cache.Set(key, result, new TimeSpan(0, 0, 30));
             
-            _memoryCache.Set(key, result, new TimeSpan(0, 0, 30));
-            
-            _logger.LogInformation("Cache entry has been created");
+            _logger.LogInformation("In-memory cache entry has been created");
         }
-        else _logger.LogInformation("Cache entry has been retrieved");
+        else _logger.LogInformation("Im-memory cache entry has been retrieved");
         
         return new ResponseDto<BoardGame[]>()
         {

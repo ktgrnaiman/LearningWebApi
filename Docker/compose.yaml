@@ -1,4 +1,4 @@
-version: '3.8'
+name: learning-webapi
 
 services:
   postgres:
@@ -34,10 +34,20 @@ services:
     secrets:
       - pgadmin_password
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    command: redis-server /run/secrets/redis.conf
+    ports:
+      - "5151:6379"
+    volumes:
+      - ./redis.conf:/run/secrets/redis.conf
+    
+
 volumes:
   postgres_data:
   pgadmin_data:
-
+    
 networks:
   postgres_network:
     driver: bridge
